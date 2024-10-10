@@ -1,0 +1,145 @@
+# Translations template for PROJECT.
+# Copyright (C) 2022 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2022-09-29 16:02+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.10.1\n"
+
+#: admin.py:32
+msgid ""
+"Amis is a low-code front-end framework that reduces page development "
+"effort and greatly improves efficiency"
+msgstr ""
+
+#: admin.py:46
+msgid "User Login"
+msgstr ""
+
+#: admin.py:58
+msgid "User logged in!"
+msgstr ""
+
+#: admin.py:61 auth/auth.py:295
+msgid "Incorrect username or password!"
+msgstr ""
+
+#: admin.py:63
+msgid "Inactive user status!"
+msgstr ""
+
+#: admin.py:87 admin.py:179 admin.py:192
+msgid "Sign up"
+msgstr ""
+
+#: admin.py:92 admin.py:97 admin.py:190
+msgid "Sign in"
+msgstr ""
+
+#: admin.py:130
+msgid "User Register"
+msgstr ""
+
+#: admin.py:144
+msgid "Username has been registered!"
+msgstr ""
+
+#: admin.py:147
+msgid "Email has been registered!"
+msgstr ""
+
+#: admin.py:162
+msgid "Registered successfully!"
+msgstr ""
+
+#: admin.py:212 auth/auth.py:247 site.py:43 site.py:45
+msgid "User Profile"
+msgstr ""
+
+#: admin.py:244
+msgid "User"
+msgstr ""
+
+#: admin.py:265
+msgid "Role"
+msgstr ""
+
+#: admin.py:273
+msgid "Group"
+msgstr ""
+
+#: admin.py:281
+msgid "Permission"
+msgstr ""
+
+#: app.py:20
+msgid "User Authentication"
+msgstr ""
+
+#: auth/auth.py:252 site.py:58
+msgid "Sign out"
+msgstr ""
+
+#: auth/models.py:24
+msgid "Create Time"
+msgstr ""
+
+#: auth/models.py:30
+msgid "Update Time"
+msgstr ""
+
+#: auth/models.py:36
+msgid "Username"
+msgstr ""
+
+#: auth/models.py:44
+msgid "Password"
+msgstr ""
+
+#: auth/models.py:48
+msgid "Email"
+msgstr ""
+
+#: auth/models.py:78
+msgid "Is Active"
+msgstr ""
+
+#: auth/models.py:79
+msgid "Nickname"
+msgstr ""
+
+#: auth/models.py:82
+msgid "Avatar"
+msgstr ""
+
+#: auth/models.py:198
+msgid "Identify"
+msgstr ""
+
+#: auth/models.py:199
+msgid "Name"
+msgstr ""
+
+#: auth/models.py:200
+msgid "Description"
+msgstr ""
+
+#: auth/models.py:213
+msgid "Parent"
+msgstr ""
+
+#: auth/schemas.py:24
+msgid "Confirm Password"
+msgstr ""
+
