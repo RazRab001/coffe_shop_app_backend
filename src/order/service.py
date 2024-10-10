@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 from uuid import UUID
 
@@ -40,7 +41,7 @@ async def create_order(user_id: UUID, order_data: CreatingOrder, db: AsyncSessio
         new_order_stmt = order.insert().values(
             user_id=user_id,
             cost=total_cost,
-            date=order_data.date,
+            date=datetime.utcnow(),
             comment=order_data.comment
         )
         result = await db.execute(new_order_stmt)
