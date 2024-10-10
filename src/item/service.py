@@ -1,3 +1,4 @@
+from itertools import product
 from typing import Optional, List
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,8 +7,9 @@ from sqlalchemy import select, update, delete
 
 from src.comment.service import get_comments_for_item, delete_comment
 from src.item.model import item, ingredient
-from src.item.schema import ItemFields, AddingIngredient, GettingItem, GettingIngredientValueForItem
+from src.item.schema import ItemFields, AddingIngredient, GettingItem, GettingIngredientValueForItem, GettingIngredients
 from src.product.service import GettingProduct
+from src.product.model import product_value_type
 
 
 async def create_item(data: ItemFields, db: AsyncSession) -> GettingItem:
@@ -52,7 +54,7 @@ async def create_item(data: ItemFields, db: AsyncSession) -> GettingItem:
 
     except IntegrityError as e:
         await db.rollback()
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def get_all_active_items(db: AsyncSession) -> Optional[List[GettingItem]]:
@@ -84,7 +86,7 @@ async def get_all_active_items(db: AsyncSession) -> Optional[List[GettingItem]]:
 
     except SQLAlchemyError as e:
         print(f"Error occurred while fetching active items: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def add_ingredient(ing: AddingIngredient, item_id: int, db: AsyncSession):
@@ -98,7 +100,7 @@ async def add_ingredient(ing: AddingIngredient, item_id: int, db: AsyncSession):
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Error occurred while adding ingredient: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def update_ingredient(ingredient_id: int, value: float, db: AsyncSession):
@@ -112,7 +114,7 @@ async def update_ingredient(ingredient_id: int, value: float, db: AsyncSession):
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Error occurred while updating ingredient: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def delete_ingredient(ingredient_id: int, db: AsyncSession):
@@ -122,7 +124,7 @@ async def delete_ingredient(ingredient_id: int, db: AsyncSession):
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Error occurred while deleting ingredient: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def get_item_ids_by_product(product_id: int, db: AsyncSession) -> Optional[List[GettingIngredientValueForItem]]:
@@ -144,7 +146,7 @@ async def get_item_ids_by_product(product_id: int, db: AsyncSession) -> Optional
 
     except SQLAlchemyError as e:
         print(f"Error occurred while fetching item IDs by product ID: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def set_activation_state(item_id: int, state: bool, db: AsyncSession) -> Optional[int]:
@@ -162,7 +164,7 @@ async def set_activation_state(item_id: int, state: bool, db: AsyncSession) -> O
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Error occurred while updating activation state: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def change_items_state_for_product(product_id: int, exist_product_value: float, db: AsyncSession):
@@ -182,12 +184,11 @@ async def change_items_state_for_product(product_id: int, exist_product_value: f
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Error occurred while changing item states for product_id {product_id}: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def get_item_by_id(item_id: int, db: AsyncSession) -> GettingItem:
     try:
-        # Выполняем запрос к базе данных для получения элемента по ID
         result = await db.execute(
             select(
                 item.c.id,
@@ -197,34 +198,58 @@ async def get_item_by_id(item_id: int, db: AsyncSession) -> GettingItem:
             ).where(item.c.id == item_id)
         )
 
-        # Получаем первую строку результата
         row = result.fetchone()
-
-        # Если элемент не найден, можно бросить исключение
         if row is None:
             raise ValueError(f"Item with ID {item_id} not found.")
+
+        ingredient_stmt = (
+            select(
+                ingredient.c.product_id,
+                ingredient.c.value,
+                product.c.name,
+                product_value_type.c.name.label('value_type'),
+                product.c.cost_per_one.label('cost')
+            )
+            .join(product, ingredient.c.product_id == product.c.id)
+            .join(product_value_type, product.c.value_type_id == product_value_type.c.id)
+            .where(ingredient.c.item_id == item_id)
+        )
+
+        ingredient_result = await db.execute(ingredient_stmt)
+        ingredients = ingredient_result.fetchall()
+
+        ingredients_list = [
+            GettingIngredients(
+                product_id=row.product_id,
+                name=row.name,
+                value=row.value,
+                value_type=row.value_type,
+                cost=row.cost
+            )
+            for row in ingredients
+        ]
+
+        # Рассчитываем общую стоимость товара на основе ингредиентов
+        total_cost = sum(ingredient.value * ingredient.cost for ingredient in ingredients_list)
 
         # Возвращаем объект GettingItem
         return GettingItem(
             id=row.id,
             title=row.title,
             description=row.description,
-            is_active=row.is_active
+            ingredients=ingredients_list,
+            cost=total_cost
         )
 
     except SQLAlchemyError as e:
         print(f"Error occurred while fetching item by ID: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def update_item(item_id: int, data: ItemFields, db: AsyncSession) -> GettingItem:
-    # Получаем текущие ингредиенты для данного item_id
     existing_ingredients = await get_item_ids_by_product(item_id, db)
-
-    # Создаем множество ID существующих ингредиентов для удобства поиска
     existing_ingredient_ids = {ing.product_id for ing in existing_ingredients}
 
-    # Обновляем основной item
     try:
         update_stmt = (
             update(item)
@@ -236,14 +261,12 @@ async def update_item(item_id: int, data: ItemFields, db: AsyncSession) -> Getti
         )
         await db.execute(update_stmt)
 
-        # Обновляем ингредиенты
         for ing in data.ingredients:
             if ing.product_id in existing_ingredient_ids:
                 await update_ingredient(ing.product_id, ing.value, db)
             else:
                 await add_ingredient(ing, item_id, db)
 
-        # Удаляем ингредиенты, которые отсутствуют в новом списке
         for existing_ing in existing_ingredients:
             if existing_ing.product_id not in {ing.product_id for ing in data.ingredients}:
                 await delete_ingredient(existing_ing.product_id, db)
@@ -254,7 +277,7 @@ async def update_item(item_id: int, data: ItemFields, db: AsyncSession) -> Getti
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Error occurred while updating item: {e}")
-        raise e  # Прокидываем исключение наверх
+        raise e
 
 
 async def delete_item(item_id: int, db: AsyncSession) -> None:

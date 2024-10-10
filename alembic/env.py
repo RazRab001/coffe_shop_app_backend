@@ -22,6 +22,8 @@ from src.card.model import *
 from src.event.model import *
 from src.event.benefit.model import *
 from src.event.criterion.model import *
+from src.profile.model import *
+from src.order.model import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
