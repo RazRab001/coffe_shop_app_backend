@@ -12,6 +12,7 @@ from card import router as CardRouter
 from comment import router as CommentRouter
 from event import router as EventRouter
 from src.profile import router as ProfileRouter
+from src.order import router as OrderRouter
 from src.middleware import (
     db_integrity_error_middleware,
     validation_exception_handler,
@@ -50,6 +51,7 @@ app.include_router(CardRouter.router, prefix='/api/v1', tags=["Bonus Card"])
 app.include_router(CommentRouter.router, prefix='/api/v1', tags=["Comment for personal or items"])
 app.include_router(EventRouter.router, prefix='/api/v1', tags=["Akce"])
 app.include_router(ProfileRouter.router, prefix='/api/v1', tags=["Profile Management"])
+app.include_router(OrderRouter.router, prefix='/api/v1', tags=["Order"])
 
 origins = [
     "http://localhost:3000",

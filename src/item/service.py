@@ -229,10 +229,8 @@ async def get_item_by_id(item_id: int, db: AsyncSession) -> GettingItem:
             for row in ingredients
         ]
 
-        # Рассчитываем общую стоимость товара на основе ингредиентов
         total_cost = sum(ingredient.value * ingredient.cost for ingredient in ingredients_list)
 
-        # Возвращаем объект GettingItem
         return GettingItem(
             id=row.id,
             title=row.title,
