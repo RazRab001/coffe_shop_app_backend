@@ -142,12 +142,13 @@ async def add_portion_of_exist_product(product_id: int, data: AddingProduct, db:
         )
         await db.execute(update_product_stmt)
 
-        new_shop_product_stmt = insert(shop_product).values(
-            shop_id=data.shop_id,
-            product_id=product_id,
-            added_at=datetime.now()
-        )
-        await db.execute(new_shop_product_stmt)
+        if data.shop_id:
+            new_shop_product_stmt = insert(shop_product).values(
+                shop_id=data.shop_id,
+                product_id=product_id,
+                added_at=datetime.now()
+            )
+            await db.execute(new_shop_product_stmt)
 
         await db.commit()
 

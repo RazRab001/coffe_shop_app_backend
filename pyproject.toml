@@ -1,6 +1,10 @@
 [tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "function"  # Устанавливает область действия для асинхронных фикстур
 pythonpath = [
-    ".", "src"
+    ".", "src"  # Определяет пути поиска для модулей
 ]
 
-asyncio_mode="auto"
+asyncio_mode = "auto"  # Режим работы с asyncio
+
+# Дополнительные опции
+addopts = "-v --tb=short"  # Более подробный вывод и короткий трейсбэк ошибок

@@ -44,11 +44,11 @@ app.include_router(
 )
 
 app.include_router(ItemRouter.router, prefix='/api/v1', tags=["Item"])
-app.include_router(ProductRouter.router, prefix='/api/v1', tags=["Item ingredients"])
+app.include_router(ProductRouter.router, prefix='/api/v1', tags=["Item Ingredients"])
 app.include_router(ShopRouter.router, prefix='/api/v1', tags=["Shop"])
 app.include_router(AllergenRouter.router, prefix='/api/v1', tags=["Allergen"])
 app.include_router(CardRouter.router, prefix='/api/v1', tags=["Bonus Card"])
-app.include_router(CommentRouter.router, prefix='/api/v1', tags=["Comment for personal or items"])
+app.include_router(CommentRouter.router, prefix='/api/v1', tags=["Comment For Personal Or Items"])
 app.include_router(EventRouter.router, prefix='/api/v1', tags=["Akce"])
 app.include_router(ProfileRouter.router, prefix='/api/v1', tags=["Profile Management"])
 app.include_router(OrderRouter.router, prefix='/api/v1', tags=["Order"])

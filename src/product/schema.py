@@ -14,13 +14,13 @@ class IngredientValueType(str, Enum):
 class CreationProduct(BaseModel):
     title: str = Field(..., min_length=1, description="Title must not be empty.")
     value_type: IngredientValueType
-    allergens: Optional[List[int]]
+    allergens: Optional[List[int]] = Field(default=[])
 
 
 class AddingProduct(BaseModel):
     value: float = Field(..., gt=0, description="The value must be greater than zero")
     unit_cost: float = Field(..., gt=0, description="The value must be greater than zero")
-    shop_id: int
+    shop_id: Optional[int] = None
 
 
 class GettingProduct(BaseModel):

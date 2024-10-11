@@ -8,14 +8,14 @@ from starlette import status
 
 from src.dependencies import get_db
 from src.item.schema import ItemFields, GettingItem
-from src.item.service import create_item, get_all_active_items, update_item, delete_item
+from src.item.service import create_item, get_all_active_items, update_item, delete_item, get_item_by_id
 
 router = APIRouter(
     prefix="/item",
 )
 
 
-@router.post("", response_model=GettingItem)
+@router.post("", response_model=GettingItem, status_code=status.HTTP_201_CREATED)
 async def create_new_item(item: ItemFields, db: AsyncSession = Depends(get_db)) -> GettingItem:
     created_item = await create_item(item, db)
     if not created_item:
@@ -27,6 +27,14 @@ async def create_new_item(item: ItemFields, db: AsyncSession = Depends(get_db)) 
 async def get_items(db: AsyncSession = Depends(get_db)) -> List[GettingItem]:
     try:
         return await get_all_active_items(db)
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+
+@router.get("/{item_id}", response_model=GettingItem)
+async def get_by_id(item_id: int, db: AsyncSession = Depends(get_db)) -> GettingItem:
+    try:
+        return await get_item_by_id(item_id, db)
     except SQLAlchemyError as e:
         raise HTTPException(status_code=500, detail=f"Database error: {e}")
 

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
+from starlette import status
 
 from src.dependencies import get_db
 from src.product.service import create_new_product, add_portion_of_exist_product, remove_portion_of_exist_product
@@ -14,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.post("", response_model=GettingProduct)
+@router.post("", response_model=GettingProduct, status_code=status.HTTP_201_CREATED)
 async def create_product(product: CreationProduct, db: AsyncSession = Depends(get_db)) -> GettingProduct:
     created_product = await create_new_product(product, db)
     if not created_product:
