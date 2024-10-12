@@ -27,7 +27,7 @@ class GettingIngredients(BaseModel):
     value_type: str
     product_id: Optional[int] = None
     value: float
-    cost: float
+    cost: Optional[float] = None
 
 
 class GettingItem(BaseModel):

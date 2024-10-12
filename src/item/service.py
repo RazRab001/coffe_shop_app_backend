@@ -8,7 +8,7 @@ from sqlalchemy import select, update, delete, insert
 from src.comment.service import get_comments_for_item, delete_comment
 from src.item.model import item, ingredient
 from src.item.schema import ItemFields, AddingIngredient, GettingItem, GettingIngredientValueForItem, GettingIngredients
-from src.product.service import GettingProduct, get_product_by_id
+from src.product.service import GettingProduct, get_product_by_id, get_or_create_value_type
 from src.product.model import product_value_type
 
 
@@ -41,23 +41,26 @@ async def create_item(data: ItemFields, db: AsyncSession) -> GettingItem:
         # Processing each ingredient if provided
         if data.ingredients:
             for ing in data.ingredients:
+                ingredient_cost: float = 0.0
                 # Adding the ingredient to the database
                 await add_ingredient(ing, item_id, db)
+                if ing.product_id:
+                    # Fetching product details for the given product_id
+                    product: GettingProduct = await get_product_by_id(ing.product_id, db)
 
-                # Fetching product details for the given product_id
-                product: GettingProduct = await get_product_by_id(ing.product_id, db)
-
-                # Calculating the cost for the ingredient
-                ingredient_cost: float = product.unit_cost * ing.value
-                total_cost += ingredient_cost
+                    # Calculating the cost for the ingredient
+                    ingredient_cost: float = product.unit_cost * ing.value
+                    total_cost += ingredient_cost
+                else:
+                    product = None
 
                 # Storing the ingredient details
                 ingredients.append({
-                    "product_id": product.id,
-                    "name": product.name,
+                    "product_id": product.id if product else None,
+                    "name": ing.name if ing.name else product.name,
                     "value": ing.value,
-                    "value_type": product.value_type,
-                    "cost": ingredient_cost
+                    "value_type": ing.value_type if ing.value_type else product.value_type,
+                    "cost": ingredient_cost if ingredient_cost else None
                 })
 
         # If 'actualise_cost' is True, update the cost with the total cost of ingredients
@@ -188,11 +191,15 @@ async def add_ingredient(ing: AddingIngredient, item_id: int, db: AsyncSession):
         if not ing.product_id and (not ing.name or not ing.value_type):
             raise ValueError("Either product_id or both name and value_type must be provided.")
 
+        value_type_id = None
+        if ing.value_type:
+            value_type_id = await get_or_create_value_type(ing.value_type, db)
+
         new_ingredient = ingredient.insert().values(
             product_id=ing.product_id,
             value=ing.value,
             item_id=item_id,
-            value_type_id=ing.value_type.value if ing.value_type else (product.value_type if product else None),
+            value_type_id=value_type_id if value_type_id else (product.value_type if product else None),
             name=ing.name if ing.name else (product.name if product else None)
         )
 

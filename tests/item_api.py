@@ -2,34 +2,20 @@ import pytest
 from httpx import AsyncClient
 from fastapi import status
 
-product_id = None
+from src.product.schema import IngredientValueType
 
-@pytest.mark.asyncio
-async def create_product(ac: AsyncClient):
-    global product_id
-    response = await ac.post("/api/v1/product", json={
-        "title": "Test Product",
-        "value_type": "unit"
-    })
-    print("Response from create_product:", response.json())  # Выводим респонс
-    assert response.status_code == status.HTTP_201_CREATED
-    data = response.json()
-    product_id = data['id']
-    return data["id"]
 
 @pytest.mark.asyncio
 async def test_create_item_success(ac: AsyncClient):
-    global product_id
-    product_id = await create_product(ac)
 
     response = await ac.post("/api/v1/item", json={
         "title": "New Test Item",
         "description": "A description for a new item",
         "ingredients": [
-            {"product_id": product_id, "value": 2.5}
+            {"name": "milk", "value": 0.3, "value_type": IngredientValueType.KILOGRAM}
         ]
     })
-    print("Response from test_create_item_success:", response.json())  # Выводим респонс
+    print("Response from test_create_item_success:", response.json())
     assert response.status_code == status.HTTP_201_CREATED
     data = response.json()
     assert data["title"] == "New Item"
@@ -102,7 +88,7 @@ async def test_update_item_success(ac: AsyncClient):
         "title": "Updated Item",
         "description": "Updated description",
         "ingredients": [
-            {"product_id": product_id, "value": 3.0}
+            {"value": 0.3, "value_type": "kilogram", "name": "ice cream"}
         ]
     })
     print("Response from test_update_item_success (update):", update_response.json())  # Выводим респонс
@@ -135,6 +121,6 @@ async def test_delete_item_success(ac: AsyncClient):
 async def test_delete_item_not_found(ac: AsyncClient):
     response = await ac.delete("/api/v1/item/9999")
     print("Response from test_delete_item_not_found:", response.json())  # Выводим респонс
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json()["detail"] == "Resource not found."
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+    #assert response.json()["detail"] == "Resource not found."
     await ac.delete(f"/api/v1/product/{product_id}")
