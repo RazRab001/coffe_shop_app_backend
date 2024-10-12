@@ -18,7 +18,7 @@ class ItemFields(BaseModel):
     title: str = Field(..., min_length=1, description="Title must not be empty.")
     description: Optional[str] = None
     ingredients: List[AddingIngredient]
-    cost: Optional[float] = None
+    cost: Optional[float] = 0.0
     actualise_cost: Optional[bool] = False
 
 

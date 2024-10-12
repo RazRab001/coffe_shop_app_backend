@@ -76,7 +76,7 @@ async def create_item(data: ItemFields, db: AsyncSession) -> GettingItem:
             title=new_item_data.title,
             description=new_item_data.description,
             ingredients=ingredients,
-            cost=total_cost if data.actualise_cost else new_item_data.cost,
+            cost=new_item_data.cost if not data.actualise_cost else total_cost,
             actualise_cost=new_item_data.actualise_cost,
             is_active=new_item_data.is_active
         )

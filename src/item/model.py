@@ -22,5 +22,5 @@ item = Table(
     Column("description", String),
     Column("is_active", Boolean, nullable=False, default=True),
     Column("actualise_cost", Boolean, nullable=False, default=False),
-    Column("cost", Double, default=0),
+    Column("cost", Double, default=0, nullable=False),
 )
