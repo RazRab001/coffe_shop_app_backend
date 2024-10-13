@@ -16,3 +16,9 @@ class CreatingEvent(BaseModel):
 class GettingEvent(CreatingEvent):
     id: int
     is_active: bool
+
+
+class UseAkcesForm(BaseModel):
+    card_id: int
+    order_id: int
+    akce_ids: [int]

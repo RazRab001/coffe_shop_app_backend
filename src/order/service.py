@@ -140,3 +140,18 @@ async def get_order_by_id(order_id: int, db: AsyncSession) -> GettingOrder:
     except SQLAlchemyError as e:
         print(f"Error occurred while fetching order by ID: {e}")
         raise e
+
+
+async def update_order_total_price(order_id: int, total_price: float, db: AsyncSession) -> None:
+    try:
+        stmt = (
+            update(order)
+            .where(order.c.id == order_id)
+            .values(cost=total_price)
+        )
+        await db.execute(stmt)
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        print(f"Database error while updating order total price: {e}")
+        raise e

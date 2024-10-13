@@ -3,10 +3,18 @@ from typing import List
 from sqlalchemy import insert, delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+
+from src.card.schema import GettingCard
+from src.event.benefit.model import Action
+from src.event.criterion.model import Contrast
 from src.event.model import event, criterion_event, benefit_event
-from src.event.schema import CreatingEvent, GettingEvent
+from src.event.schema import CreatingEvent, GettingEvent, UseAkcesForm
 from src.event.criterion.service import create_criterion, delete_criterion
 from src.event.benefit.service import create_benefit, delete_benefit
+from src.event.utis import benefit_operations, contrast_operations
+from src.order.schema import GettingOrder
+from src.card.service import get_card_by_id, update_card_count
+from src.order.service import get_order_by_id, update_order_total_price
 
 
 async def create_event(event_data: CreatingEvent, db: AsyncSession) -> GettingEvent:
@@ -160,4 +168,70 @@ async def get_all_events(db: AsyncSession) -> List[GettingEvent]:
 
     except SQLAlchemyError as e:
         print(f"Database error while fetching all events: {e}")
+        raise e
+
+
+async def get_event_by_id(event_id: int, db: AsyncSession) -> GettingEvent:
+    try:
+        stmt = select(event).where(event.c.id == event_id)
+        result = await db.execute(stmt)
+
+        row = result.fetchone()
+
+        if row is None:
+            raise ValueError(f"Event with ID {event_id} not found.")
+
+        get_event = GettingEvent(
+            id=row.id,
+            title=row.title,
+            description=row.description,
+            is_active=row.is_active
+        )
+
+        return get_event
+
+    except SQLAlchemyError as e:
+        print(f"Database error while fetching all events: {e}")
+        raise e
+
+
+async def use_akce(data: UseAkcesForm, db: AsyncSession) -> GettingOrder:
+    try:
+        card: GettingCard = await get_card_by_id(data.card_id, db)
+        if not card:
+            raise ValueError("Can't use akce without bonus card")
+
+        order: GettingOrder = await get_order_by_id(data.order_id, db)
+        if not order:
+            raise ValueError("Can't use akce without order")
+
+        updated_card_value = card.count
+        used_points = card.used_points
+        total_order_cost = order.cost
+
+        for akce_id in data.akce_ids:
+            akce: GettingEvent = await get_event_by_id(akce_id, db)
+
+            for criterion in akce.criteria:
+                comparison_func = contrast_operations.get(criterion.contrast)
+                if not comparison_func(order, card, criterion.value):
+                    raise ValueError(
+                        f"Card or order does not satisfy {criterion.contrast.value} {criterion.value} for akce {akce.title}"
+                    )
+
+            for benefit in akce.benefits:
+                apply_benefit = benefit_operations.get(benefit.action)
+
+                benefit_result = apply_benefit(order, card, benefit.value)
+
+                updated_card_value = benefit_result.card_value
+                used_points = benefit_result.used_points
+                total_order_cost = benefit_result.total_cost
+
+        await update_card_count(card.id, updated_card_value, used_points, db)
+        await update_order_total_price(order.id, total_order_cost, db)
+
+        return await get_order_by_id(data.order_id, db)
+    except SQLAlchemyError as e:
+        print(f"Database error while use akce effect for card: {e}")
         raise e

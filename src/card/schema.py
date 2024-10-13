@@ -19,3 +19,4 @@ class GettingCard(BaseModel):
     id: int
     phone: str
     count: int
+    used_points: int

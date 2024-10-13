@@ -9,5 +9,6 @@ bonus_card = Table(
     Column('id', BigInteger, primary_key=True, autoincrement=True),
     Column('user_id', UUID, ForeignKey(User.id)),
     Column('phone', String(20), nullable=False),
-    Column('count', Integer, default=0)
+    Column('count', Integer, default=0),
+    Column('used_points', Integer, default=0)
 )

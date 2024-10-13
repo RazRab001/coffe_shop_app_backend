@@ -8,7 +8,7 @@ order = Table(
     'order',
     metadata,
     Column('id', BigInteger, primary_key=True),
-    Column('user_id', UUID, ForeignKey(User.id), nullable=False),
+    Column('user_id', UUID, ForeignKey(User.id)),
     Column('cost', Double, nullable=False),
     Column('date', TIMESTAMP, nullable=False),
     Column('comment', String(255))

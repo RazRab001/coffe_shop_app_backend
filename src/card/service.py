@@ -30,7 +30,8 @@ async def create_card(card_data: CreatingCard, db: AsyncSession) -> Optional[Get
         card_row = result.fetchone()
 
         if card_row:
-            return GettingCard(id=card_row.id, phone=card_row.phone, count=card_row.count)
+            return GettingCard(id=card_row.id, phone=card_row.phone, count=card_row.count,
+                               used_points=card_row.used_points)
 
     except SQLAlchemyError as e:
         await db.rollback()
@@ -55,7 +56,8 @@ async def update_card(id: int, card_update: UpdatingCard, db: AsyncSession) -> O
 
         # Если есть добавление бонусов, увеличиваем счетчик
         if "adding_bonus" in card_update_data:
-            card_update_data["count"] = card.count + card_update.adding_bonus
+            card_count = card.count + card_update.adding_bonus
+            await update_card_count(id, card_count, db)
 
         # Обновляем данные карты
         stmt = update(bonus_card).where(bonus_card.c.id == id).values(**card_update_data).returning(
@@ -66,7 +68,8 @@ async def update_card(id: int, card_update: UpdatingCard, db: AsyncSession) -> O
         updated_card_row = result.fetchone()
 
         if updated_card_row:
-            return GettingCard(id=updated_card_row.id, phone=updated_card_row.phone, count=updated_card_row.count)
+            return GettingCard(id=updated_card_row.id, phone=updated_card_row.phone, count=updated_card_row.count,
+                               used_points=updated_card_row.used_points)
 
     except SQLAlchemyError as e:
         await db.rollback()
@@ -84,7 +87,7 @@ async def get_card_by_phone(phone_number: str, db: AsyncSession) -> Optional[Get
         card_row = result.fetchone()
 
         if card_row:
-            return GettingCard(id=card_row.id, phone=card_row.phone, count=card_row.count)
+            return GettingCard(id=card_row.id, phone=card_row.phone, count=card_row.count, used_points=card_row.used_points)
 
         return None
 
@@ -103,7 +106,7 @@ async def get_card_by_id(card_id: int, db: AsyncSession) -> Optional[GettingCard
         card_row = result.fetchone()
 
         if card_row:
-            return GettingCard(id=card_row.id, phone=card_row.phone, count=card_row.count)
+            return GettingCard(id=card_row.id, phone=card_row.phone, count=card_row.count, used_points=card_row.used_points)
 
         return None
 
@@ -126,4 +129,19 @@ async def delete_card(id: int, db: AsyncSession) -> bool:
     except SQLAlchemyError as e:
         await db.rollback()
         print(f"Error deleting bonus card: {e}")
+        raise e
+
+
+async def update_card_count(card_id: int, new_count: int, new_used_points: int, db: AsyncSession) -> None:
+    try:
+        stmt = (
+            update(bonus_card)
+            .where(bonus_card.c.id == card_id)
+            .values(count=new_count, used_points=new_used_points)
+        )
+        await db.execute(stmt)
+        await db.commit()
+    except SQLAlchemyError as e:
+        await db.rollback()
+        print(f"Database error while updating card count: {e}")
         raise e

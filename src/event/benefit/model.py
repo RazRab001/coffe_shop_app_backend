@@ -6,8 +6,10 @@ from src.database import metadata
 
 
 class Action(enum.Enum):
-    add = "+"
-    reduce = "-"
+    add_card = "add bonuses"
+    reduce_card = "reduce bonus count"
+    reduce_order_sum = "reduce sum"
+    reduce_order_sum_percent = "reduce sum of percents"
 
 
 benefit = Table(

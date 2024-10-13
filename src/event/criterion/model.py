@@ -6,10 +6,13 @@ from src.database import metadata
 
 
 class Contrast(enum.Enum):
-    greater_than = ">"
-    less_than = "<"
-    equal_to = "="
-    divisible_by = "%"
+    # For active points on bonus card count
+    greater_than = "greater"
+    # For all(active+used) point on bonus card count
+    greater_for_all = "greater all"
+    # For order items
+    count_items_in_order = "count of items"
+    define_item_in_order = "define item"
 
 
 criterion = Table(
