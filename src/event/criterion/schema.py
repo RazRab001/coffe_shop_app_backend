@@ -6,3 +6,7 @@ from src.event.criterion.model import Contrast
 class Criterion(BaseModel):
     contrast: Contrast
     value: PositiveFloat
+
+
+class GettingCriterion(Criterion):
+    id: int

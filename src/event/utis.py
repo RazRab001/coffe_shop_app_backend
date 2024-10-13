@@ -1,5 +1,5 @@
 from typing import List
-from src.event.benefit.model import Action
+from src.event.benefit.model import Activity
 from src.event.criterion.model import Contrast
 from src.order.schema import GettingOrder
 from src.card.schema import GettingCard
@@ -18,10 +18,10 @@ contrast_operations = {
 
 
 benefit_operations = {
-    Action.add_card: lambda order, card, benefit_value: add_point_to_card(order, card, benefit_value),
-    Action.reduce_card: lambda order, card, benefit_value: reduce_bonuses_on_count(order, card, benefit_value),
-    Action.reduce_order_sum: lambda order, card, benefit_value: reduce_sum_of_order_for_value(order, card, benefit_value),
-    Action.reduce_order_sum_percent: lambda order, card, benefit_value: reduce_sum_of_order_for_percent(order, card, benefit_value)
+    Activity.add_cart_bonuses: lambda order, card, benefit_value: add_point_to_card(order, card, benefit_value),
+    Activity.reduce_card_bonuses: lambda order, card, benefit_value: reduce_bonuses_on_count(order, card, benefit_value),
+    Activity.reduce_order_sum: lambda order, card, benefit_value: reduce_sum_of_order_for_value(order, card, benefit_value),
+    Activity.reduce_order_sum_percent: lambda order, card, benefit_value: reduce_sum_of_order_for_percent(order, card, benefit_value)
 }
 
 

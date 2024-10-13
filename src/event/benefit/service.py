@@ -4,14 +4,14 @@ from sqlalchemy import insert, delete, select
 from pydantic import PositiveFloat
 from typing import Optional
 from src.event.benefit.model import benefit as benefit_table
-from src.event.benefit.schema import Benefit
+from src.event.benefit.schema import Benefit, GettingBenefit
 
 
-async def create_benefit(benefit_data: Benefit, db: AsyncSession) -> Optional[Benefit]:
+async def create_benefit(benefit_data: Benefit, db: AsyncSession) -> GettingBenefit:
     try:
         # Создаем SQL запрос на вставку данных в таблицу benefit
         stmt = insert(benefit_table).values(
-            action=benefit_data.action,
+            action=benefit_data.action.name,
             action_value=benefit_data.value
         ).returning(benefit_table.c.id, benefit_table.c.action, benefit_table.c.action_value)
 
@@ -22,7 +22,8 @@ async def create_benefit(benefit_data: Benefit, db: AsyncSession) -> Optional[Be
         # Получаем данные новой записи
         benefit_row = result.fetchone()
         if benefit_row:
-            return Benefit(
+            return GettingBenefit(
+                id=benefit_row.id,
                 action=benefit_row.action,
                 value=benefit_row.action_value
             )

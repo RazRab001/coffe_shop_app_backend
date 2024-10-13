@@ -5,8 +5,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 
 from src.card.schema import GettingCard
-from src.event.benefit.model import Action
-from src.event.criterion.model import Contrast
 from src.event.model import event, criterion_event, benefit_event
 from src.event.schema import CreatingEvent, GettingEvent, UseAkcesForm
 from src.event.criterion.service import create_criterion, delete_criterion
@@ -22,7 +20,7 @@ async def create_event(event_data: CreatingEvent, db: AsyncSession) -> GettingEv
         stmt = insert(event).values(
             title=event_data.title,
             description=event_data.description,
-            is_active=True  # Новое событие по умолчанию активное
+            is_active=True
         ).returning(event.c.id, event.c.title, event.c.description, event.c.is_active)
 
         result = await db.execute(stmt)

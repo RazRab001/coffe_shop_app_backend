@@ -3,16 +3,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy import insert, select, delete
 
-from src.event.criterion.schema import Criterion
+from src.event.criterion.schema import Criterion, GettingCriterion
 from src.event.criterion.model import criterion as criterion_table
 
 
 # Функция для создания критерия
-async def create_criterion(criterion: Criterion, db: AsyncSession) -> Criterion:
+async def create_criterion(criterion: Criterion, db: AsyncSession) -> GettingCriterion:
     try:
         # Формируем SQL запрос для вставки нового критерия
         stmt = insert(criterion_table).values(
-            contrast=criterion.contrast,
+            contrast=criterion.contrast.name,
             contrast_value=criterion.value
         ).returning(criterion_table.c.id, criterion_table.c.contrast, criterion_table.c.contrast_value)
 
@@ -23,7 +23,8 @@ async def create_criterion(criterion: Criterion, db: AsyncSession) -> Criterion:
         # Получаем данные новой записи
         criterion_row = result.fetchone()
         if criterion_row:
-            return Criterion(
+            return GettingCriterion(
+                id=criterion_row.id,
                 contrast=criterion_row.contrast,
                 value=criterion_row.contrast_value
             )
