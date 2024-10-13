@@ -16,74 +16,75 @@ async def create_item(data: ItemFields, db: AsyncSession) -> GettingItem:
     from src.product.service import get_product_by_id
 
     try:
-        # Insert new item into the database with RETURNING to get the full record back
-        stmt = insert(item).values(
-            title=data.title,
-            description=data.description,
-            cost=data.cost,  # Initially cost can be passed or updated later based on ingredients
-            actualise_cost=data.actualise_cost,
-            is_active=True  # Assuming a new item is active by default
-        ).returning(
-            item.c.id, item.c.title, item.c.description, item.c.cost, item.c.actualise_cost, item.c.is_active
-        )
-
-        # Executing the insert statement
-        result = await db.execute(stmt)
-        await db.commit()
-
-        # Extracting the returned row
-        new_item_data = result.fetchone()
-        item_id = new_item_data.id
-
-        ingredients = []
-        total_cost: float = 0.0
-
-        # Processing each ingredient if provided
-        if data.ingredients:
-            for ing in data.ingredients:
-                ingredient_cost: float = 0.0
-                # Adding the ingredient to the database
-                await add_ingredient(ing, item_id, db)
-                if ing.product_id:
-                    # Fetching product details for the given product_id
-                    product: GettingProduct = await get_product_by_id(ing.product_id, db)
-
-                    # Calculating the cost for the ingredient
-                    ingredient_cost: float = product.unit_cost * ing.value
-                    total_cost += ingredient_cost
-                else:
-                    product = None
-
-                # Storing the ingredient details
-                ingredients.append({
-                    "product_id": product.id if product else None,
-                    "name": ing.name if ing.name else product.name,
-                    "value": ing.value,
-                    "value_type": ing.value_type if ing.value_type else product.value_type,
-                    "cost": ingredient_cost if ingredient_cost else None
-                })
-
-        # If 'actualise_cost' is True, update the cost with the total cost of ingredients
-        if data.actualise_cost:
-            await db.execute(
-                item.update().where(item.c.id == item_id).values(cost=total_cost)
+        # Use async with db.begin() to ensure all database operations are in the same transaction
+        async with db.begin():
+            # Insert new item into the database with RETURNING to get the full record back
+            stmt = insert(item).values(
+                title=data.title,
+                description=data.description,
+                cost=data.cost,  # Initially cost can be passed or updated later based on ingredients
+                actualise_cost=data.actualise_cost,
+                is_active=True  # Assuming a new item is active by default
+            ).returning(
+                item.c.id, item.c.title, item.c.description, item.c.cost, item.c.actualise_cost, item.c.is_active
             )
-            await db.commit()
 
-        # Return the newly created item data along with the ingredients
-        return GettingItem(
-            id=new_item_data.id,
-            title=new_item_data.title,
-            description=new_item_data.description,
-            ingredients=ingredients,
-            cost=new_item_data.cost if not data.actualise_cost else total_cost,
-            actualise_cost=new_item_data.actualise_cost,
-            is_active=new_item_data.is_active
-        )
+            # Executing the insert statement
+            result = await db.execute(stmt)
+
+            # Extracting the returned row
+            new_item_data = result.fetchone()
+            item_id = new_item_data.id
+
+            ingredients = []
+            total_cost: float = 0.0
+
+            # Processing each ingredient if provided
+            if data.ingredients:
+                for ing in data.ingredients:
+                    ingredient_cost: float = 0.0
+                    # Adding the ingredient to the database
+                    await add_ingredient(ing, item_id, db)
+                    if ing.product_id:
+                        # Fetching product details for the given product_id
+                        product: GettingProduct = await get_product_by_id(ing.product_id, db)
+
+                        # Calculating the cost for the ingredient
+                        ingredient_cost = product.unit_cost * ing.value
+                        total_cost += ingredient_cost
+                    else:
+                        product = None
+
+                    # Storing the ingredient details
+                    ingredients.append({
+                        "product_id": product.id if product else None,
+                        "name": ing.name if ing.name else product.name,
+                        "value": ing.value,
+                        "value_type": ing.value_type if ing.value_type else product.value_type,
+                        "cost": ingredient_cost if ingredient_cost else None
+                    })
+
+            # If 'actualise_cost' is True, update the cost with the total cost of ingredients
+            if data.actualise_cost:
+                await db.execute(
+                    item.update().where(item.c.id == item_id).values(cost=total_cost)
+                )
+
+            # Return the newly created item data along with the ingredients
+            return GettingItem(
+                id=new_item_data.id,
+                title=new_item_data.title,
+                description=new_item_data.description,
+                ingredients=ingredients,
+                cost=new_item_data.cost if not data.actualise_cost else total_cost,
+                actualise_cost=new_item_data.actualise_cost,
+                is_active=new_item_data.is_active
+            )
 
     except IntegrityError as e:
         # Rollback the transaction in case of an error
         await db.rollback()
+        print(f"Error occurred while creating item: {e}")
         raise e
 
 
@@ -331,13 +332,13 @@ async def get_item_by_id(item_id: int, db: AsyncSession) -> GettingItem:
         else:
             total_cost = row.cost
 
-        ingredients_list = get_ingredients_for_item(item_id, db)
+        ingredients_list = await get_ingredients_for_item(item_id, db)
 
         return GettingItem(
             id=row.id,
             title=row.title,
             description=row.description,
-            ingredients=ingredients_list,
+            ingredients=ingredients_list if len(ingredients_list) > 0 else [],
             cost=total_cost,
             actualise_cost=row.actualise_cost,
             is_active=row.is_active

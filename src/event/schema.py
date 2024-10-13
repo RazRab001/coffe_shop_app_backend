@@ -2,15 +2,15 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from src.event.criterion.schema import Criterion
-from src.event.benefit.schema import Benefit
+from src.event.criterion.schema import Criterion, GettingCriterion
+from src.event.benefit.schema import Benefit, GettingBenefit
 
 
 class CreatingEvent(BaseModel):
     title: str
     description: Optional[str] = None
-    criteria: Optional[List[Criterion]] = []
-    benefits: Optional[List[Benefit]] = []
+    criteria: Optional[List[GettingCriterion]] = []
+    benefits: Optional[List[GettingBenefit]] = []
 
 
 class GettingEvent(CreatingEvent):

@@ -13,28 +13,31 @@ from src.allergen.service import get_allergens_by_ids
 
 async def create_new_product(data: CreationProduct, db: AsyncSession) -> Optional[GettingProduct]:
     try:
-        # Get or create the value type
-        value_type_id = await get_or_create_value_type(data.value_type, db)
+        # Begin the transaction
+        async with db.begin():
+            # Get or create the value type
+            value_type_id = await get_or_create_value_type(data.value_type, db)
 
-        # Insert the new product
-        new_product_stmt = insert(product).values(
-            name=data.title,
-            value_type_id=value_type_id,
-        )
+            # Insert the new product
+            new_product_stmt = insert(product).values(
+                name=data.title,
+                value_type_id=value_type_id,
+            )
 
-        result = await db.execute(new_product_stmt)
-        await db.commit()
+            result = await db.execute(new_product_stmt)
+            product_id = result.inserted_primary_key[0]
 
-        product_id = result.inserted_primary_key[0]
+            # Insert allergens for the product if provided
+            if data.allergens:
+                allergen_product_stmt = insert(allergen_product).values([
+                    {"allergen_id": allergen_id, "product_id": product_id} for allergen_id in data.allergens
+                ])
+                await db.execute(allergen_product_stmt)
 
-        # Insert allergens for the product if provided
-        if data.allergens:
-            allergen_product_stmt = insert(allergen_product).values([
-                {"allergen_id": allergen_id, "product_id": product_id} for allergen_id in data.allergens
-            ])
-            await db.execute(allergen_product_stmt)
+            # Commit the transaction if all goes well
             await db.commit()
 
+        # Return the newly created product
         return GettingProduct(
             id=product_id,
             name=data.title,
@@ -45,6 +48,7 @@ async def create_new_product(data: CreationProduct, db: AsyncSession) -> Optiona
         )
 
     except SQLAlchemyError as e:
+        # Rollback in case of error
         await db.rollback()
         print(f"Error occurred: {e}")
         raise e

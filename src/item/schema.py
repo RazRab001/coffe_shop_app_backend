@@ -17,7 +17,7 @@ class AddingIngredient(BaseModel):
 class ItemFields(BaseModel):
     title: str = Field(..., min_length=1, description="Title must not be empty.")
     description: Optional[str] = None
-    ingredients: List[AddingIngredient]
+    ingredients: Optional[List[AddingIngredient]] = []
     cost: Optional[float] = 0.0
     actualise_cost: Optional[bool] = False
 
@@ -34,7 +34,7 @@ class GettingItem(BaseModel):
     id: int
     title: str
     description: Optional[str] = None
-    ingredients: List[GettingIngredients]
+    ingredients: Optional[List[GettingIngredients]] = []
     cost: float
     actualise_cost: bool
     is_active: bool

@@ -13,64 +13,72 @@ from src.order.model import order, order_item, order_item_ingredient
 from src.order.schema import CreatingOrder, OrderItem, OrderItemIngredient, GettingOrder
 
 
-async def create_order(user_id: UUID, order_data: CreatingOrder, db: AsyncSession) -> GettingOrder:
+async def create_order(order_data: CreatingOrder, db: AsyncSession) -> GettingOrder:
     try:
-        user = await get_profile_by_id(user_id, db)
-        if not user:
-            raise ValueError(f"User with ID {user_id} not found.")
+        if order_data.user_id:
+            user = await get_profile_by_id(order_data.user_id, db)
+            if not user:
+                raise ValueError(f"User with ID {order_data.user_id} not found.")
 
         total_cost = 0
         validated_items = []
 
-        for order_item_data in order_data.items:
-            item_info = await get_item_by_id(order_item_data.item_id, db)
-            if not item_info:
-                raise ValueError(f"Item with ID {order_item_data.item_id} not found.")
+        # Begin the transaction
+        async with db.begin():
+            # Process each order item
+            for order_item_data in order_data.items:
+                item_info = await get_item_by_id(order_item_data.item_id, db)
+                if not item_info:
+                    raise ValueError(f"Item with ID {order_item_data.item_id} not found.")
 
-            item_cost = item_info.cost * order_item_data.count
-            for ingredient_data in order_item_data.ingredients:
-                ingredient_product = await get_product_by_id(ingredient_data.product_id, db)
-                if not ingredient_product:
-                    raise ValueError(f"Product with ID {ingredient_data.product_id} not found as ingredient.")
+                # Calculate the cost of the item and its ingredients
+                item_cost = item_info.cost * order_item_data.count
+                for ingredient_data in order_item_data.ingredients:
+                    ingredient_product = await get_product_by_id(ingredient_data.product_id, db)
+                    if not ingredient_product:
+                        raise ValueError(f"Product with ID {ingredient_data.product_id} not found as ingredient.")
 
-                item_cost += ingredient_product.cost * ingredient_data.value
+                    item_cost += ingredient_product.cost * ingredient_data.value
 
-            total_cost += item_cost
-            validated_items.append((order_item_data, item_info))
+                total_cost += item_cost
+                validated_items.append((order_item_data, item_info))
 
-        new_order_stmt = order.insert().values(
-            user_id=user_id,
-            cost=total_cost,
-            date=datetime.utcnow(),
-            comment=order_data.comment
-        )
-        result = await db.execute(new_order_stmt)
-        await db.commit()
-
-        order_id = result.inserted_primary_key[0]
-
-        for order_item_data, item_info in validated_items:
-            new_order_item_stmt = order_item.insert().values(
-                order_id=order_id,
-                item_id=order_item_data.item_id,
-                count=order_item_data.count
+            # Insert the new order
+            new_order_stmt = order.insert().values(
+                user_id=order_data.user_id,
+                cost=total_cost,
+                date=datetime.utcnow().date(),
+                comment=order_data.comment
             )
-            await db.execute(new_order_item_stmt)
+            result = await db.execute(new_order_stmt)
+            order_id = result.inserted_primary_key[0]
 
-            for ingredient_data in order_item_data.ingredients:
-                await db.execute(
-                    order_item_ingredient.insert().values(
-                        order_item_id=order_item_data.item_id,
-                        product_id=ingredient_data.product_id,
-                        value=ingredient_data.value
-                    )
+            # Insert each order item and its ingredients
+            for order_item_data, item_info in validated_items:
+                new_order_item_stmt = order_item.insert().values(
+                    order_id=order_id,
+                    item_id=order_item_data.item_id,
+                    count=order_item_data.count
                 )
+                await db.execute(new_order_item_stmt)
 
-        await db.commit()
+                for ingredient_data in order_item_data.ingredients:
+                    await db.execute(
+                        order_item_ingredient.insert().values(
+                            order_item_id=order_item_data.item_id,
+                            product_id=ingredient_data.product_id,
+                            value=ingredient_data.value
+                        )
+                    )
 
+            # Commit the transaction
+            await db.commit()
+
+        # Return the newly created order
         return await get_order_by_id(order_id, db)
 
     except SQLAlchemyError as e:
+        # Rollback the transaction if any error occurs
         await db.rollback()
         print(f"Error occurred while creating order: {e}")
         raise e
