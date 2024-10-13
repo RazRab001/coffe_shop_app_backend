@@ -21,4 +21,4 @@ class GettingEvent(CreatingEvent):
 class UseAkcesForm(BaseModel):
     card_id: int
     order_id: int
-    akce_ids: [int]
+    akce_ids: List[int]
