@@ -33,28 +33,24 @@ app.middleware("http")(internal_server_error_middleware)
 app.middleware("http")(not_found_error_middleware)
 
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["Auth"]
 )
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
     prefix="/auth",
-    tags=["auth"],
+    tags=["Auth"],
 )
 app.include_router(
     fastapi_users.get_reset_password_router(),
     prefix="/auth",
-    tags=["auth"],
+    tags=["Auth"],
 )
 app.include_router(
     fastapi_users.get_verify_router(UserRead),
     prefix="/auth",
-    tags=["auth"],
+    tags=["Auth"],
 )
-app.include_router(
-    fastapi_users.get_users_router(UserRead, UserUpdate),
-    prefix="/users",
-    tags=["users"],
-)
+
 app.include_router(ItemRouter.router, prefix='/api/v1', tags=["Item"])
 app.include_router(ProductRouter.router, prefix='/api/v1', tags=["Item Ingredients"])
 app.include_router(ShopRouter.router, prefix='/api/v1', tags=["Shop"])
