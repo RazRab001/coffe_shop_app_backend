@@ -9,13 +9,17 @@ from src.event.benefit.schema import Benefit, GettingBenefit
 class CreatingEvent(BaseModel):
     title: str
     description: Optional[str] = None
-    criteria: Optional[List[GettingCriterion]] = []
-    benefits: Optional[List[GettingBenefit]] = []
+    criteria: Optional[List[Criterion]] = []
+    benefits: Optional[List[Benefit]] = []
 
 
 class GettingEvent(CreatingEvent):
     id: int
     is_active: bool
+    title: str
+    description: Optional[str] = None
+    criteria: Optional[List[Criterion]] = []
+    benefits: Optional[List[Benefit]] = []
 
 
 class UseAkcesForm(BaseModel):

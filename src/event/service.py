@@ -21,43 +21,47 @@ from src.order.service import get_order_by_id, update_order_total_price
 
 async def create_event(event_data: CreatingEvent, db: AsyncSession) -> GettingEvent:
     try:
-        async with db.begin():
-            stmt = insert(event).values(
-                title=event_data.title,
-                description=event_data.description,
-                is_active=True
-            ).returning(event.c.id, event.c.title, event.c.description, event.c.is_active)
+        # Вставляем событие без явного создания транзакции
+        stmt = insert(event).values(
+            title=event_data.title,
+            description=event_data.description,
+            is_active=True
+        ).returning(event.c.id, event.c.title, event.c.description, event.c.is_active)
 
-            result = await db.execute(stmt)
-            event_row = result.fetchone()
+        result = await db.execute(stmt)
+        event_row = result.fetchone()
 
-            if not event_row:
-                raise ValueError("Failed to create event")
+        if not event_row:
+            raise ValueError("Failed to create event")
 
-            event_id = event_row.id
+        event_id = event_row.id
 
-            if event_data.criteria:
-                for criterion_data in event_data.criteria:
-                    created_criterion = await create_criterion(criterion_data, db)
+        # Создание критериев
+        if event_data.criteria:
+            for criterion_data in event_data.criteria:
+                created_criterion = await create_criterion(criterion_data, db)
 
-                    stmt = insert(criterion_event).values(
-                        event_id=event_id,
-                        criterion_id=created_criterion.id
-                    )
-                    await db.execute(stmt)
+                stmt = insert(criterion_event).values(
+                    event_id=event_id,
+                    criterion_id=created_criterion.id
+                )
+                await db.execute(stmt)
 
-            if event_data.benefits:
-                for benefit_data in event_data.benefits:
-                    created_benefit = await create_benefit(benefit_data, db)
+        # Создание бенефитов
+        if event_data.benefits:
+            for benefit_data in event_data.benefits:
+                created_benefit = await create_benefit(benefit_data, db)
 
-                    stmt = insert(benefit_event).values(
-                        event_id=event_id,
-                        benefit_id=created_benefit.id
-                    )
-                    await db.execute(stmt)
+                stmt = insert(benefit_event).values(
+                    event_id=event_id,
+                    benefit_id=created_benefit.id
+                )
+                await db.execute(stmt)
 
-            await db.commit()
+        # Коммитим изменения в конце, если все прошло успешно
+        await db.commit()
 
+        # Возвращаем результат
         return GettingEvent(
             id=event_id,
             title=event_row.title,

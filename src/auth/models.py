@@ -1,3 +1,4 @@
+import uuid
 from datetime import datetime
 
 from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
@@ -20,7 +21,7 @@ class User(SQLAlchemyBaseUserTable[int], Base):
     __tablename__ = "profile"
     __table_args__ = {'extend_existing': True}
 
-    id = Column(UUID, primary_key=True, unique=True, nullable=False)
+    id = Column(UUID, primary_key=True, default=uuid.uuid4, unique=True, nullable=False)
     email = Column(String, nullable=False)
     phone = Column(String)
     username = Column(String, nullable=False)
