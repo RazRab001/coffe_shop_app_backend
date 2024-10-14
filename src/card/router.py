@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from starlette import status
 
-from src.dependencies import get_db
+from src.auth.models import User
+from src.dependencies import get_db, permission_dependency
 from src.card.schema import CreatingCard, UpdatingCard, GettingCard
 from src.card.service import create_card, update_card, get_card_by_id, get_card_by_phone, delete_card
 
@@ -17,6 +18,8 @@ router = APIRouter(
 
 @router.post("", response_model=GettingCard)
 async def create_new_card(card: CreatingCard, db: AsyncSession = Depends(get_db)) -> GettingCard:
+    # No filtration, need to update
+    user: User = Depends(permission_dependency("create_card", card.user_id))
     created_allergen = await create_card(card, db)
     if not created_allergen:
         raise HTTPException(status_code=400, detail="Failed to create card")
@@ -41,6 +44,8 @@ async def get_card_with_phone_number(phone: str, db: AsyncSession = Depends(get_
 
 @router.put("/{card_id}", response_model=GettingCard)
 async def update_card_data(card_id: int, card: UpdatingCard, db: AsyncSession = Depends(get_db)) -> GettingCard:
+    # No filtration, need to update
+    user: User = Depends(permission_dependency("update_card", card.user_id))
     card = await update_card(card_id, card, db)
     if not card:
         raise HTTPException(status_code=400, detail="Failed to update card")
@@ -49,4 +54,7 @@ async def update_card_data(card_id: int, card: UpdatingCard, db: AsyncSession = 
 
 @router.delete("/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_existing_card(card_id: int, db: AsyncSession = Depends(get_db)) -> None:
+    card = await get_card_by_id(card_id, db)
+    # No filtration, need to update
+    user: User = Depends(permission_dependency("delete_card", card.user_id))
     await delete_card(card_id, db)

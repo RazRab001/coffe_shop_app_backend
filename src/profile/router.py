@@ -3,9 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from uuid import UUID
 from typing import List
 
-from src.dependencies import get_db
+from src.auth.models import User
+from src.dependencies import get_db, permission_dependency
 from src.profile.schema import UpdatingProfile, GettingProfile, CreatingPreference, GettingPreference
-from src.profile.service import update_profile, change_evaluation, create_preference, get_profile_by_id, get_preferences, delete_preference
+from src.profile.service import update_profile, create_preference, get_profile_by_id, get_preferences, delete_preference
 
 router = APIRouter(
     prefix="/profile",
@@ -14,6 +15,8 @@ router = APIRouter(
 
 @router.put("/{user_id}", response_model=GettingProfile)
 async def update_user_profile(user_id: UUID, profile: UpdatingProfile, db: AsyncSession = Depends(get_db)):
+    #No filtration, need to update
+    user: User = Depends(permission_dependency("change_profile", user_id))
     try:
         updated_profile = await update_profile(user_id, profile, db)
         return updated_profile
@@ -21,16 +24,9 @@ async def update_user_profile(user_id: UUID, profile: UpdatingProfile, db: Async
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.put("/{user_id}/evaluation", status_code=204)
-async def update_user_evaluation(user_id: UUID, value: float, db: AsyncSession = Depends(get_db)):
-    try:
-        await change_evaluation(user_id, value, db)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
 @router.post("/preference", response_model=GettingPreference)
-async def add_preference(preference: CreatingPreference, db: AsyncSession = Depends(get_db)):
+async def add_preference(preference: CreatingPreference, db: AsyncSession = Depends(get_db),
+                         user: User = Depends(permission_dependency("add_preference"))):
     try:
         created_preference = await create_preference(preference, db)
         return created_preference
@@ -57,7 +53,8 @@ async def get_all_preferences(db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/preference/{preference_id}", status_code=204)
-async def remove_preference(preference_id: int, db: AsyncSession = Depends(get_db)):
+async def remove_preference(preference_id: int, db: AsyncSession = Depends(get_db),
+                            user: User = Depends(permission_dependency("remove_preference"))):
     try:
         await delete_preference(preference_id, db)
     except Exception as e:

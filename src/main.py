@@ -33,7 +33,9 @@ app.middleware("http")(internal_server_error_middleware)
 app.middleware("http")(not_found_error_middleware)
 
 app.include_router(
-    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["Auth"]
+    fastapi_users.get_auth_router(auth_backend),
+    prefix="/auth/jwt",
+    tags=["Auth"]
 )
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),

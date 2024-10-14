@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from starlette import status
 
-from src.dependencies import get_db
+from src.auth.models import User
+from src.dependencies import get_db, permission_dependency
 from src.product.service import create_new_product, add_portion_of_exist_product, remove_portion_of_exist_product
 from src.product.schema import GettingProduct, CreationProduct, AddingProduct, ReducingProduct
 
@@ -16,7 +17,8 @@ router = APIRouter(
 
 
 @router.post("", response_model=GettingProduct, status_code=status.HTTP_201_CREATED)
-async def create_product(product: CreationProduct, db: AsyncSession = Depends(get_db)) -> GettingProduct:
+async def create_product(product: CreationProduct, db: AsyncSession = Depends(get_db),
+                         user: User = Depends(permission_dependency("create_product"))) -> GettingProduct:
     created_product = await create_new_product(product, db)
     if not created_product:
         raise HTTPException(status_code=400, detail="Failed to create product")
@@ -24,7 +26,8 @@ async def create_product(product: CreationProduct, db: AsyncSession = Depends(ge
 
 
 @router.put("/add/{product_id}", response_model=GettingProduct)
-async def add_product(product_id: int, product: AddingProduct, db: AsyncSession = Depends(get_db)) -> GettingProduct:
+async def add_product(product_id: int, product: AddingProduct, db: AsyncSession = Depends(get_db),
+                      user: User = Depends(permission_dependency("change_product"))) -> GettingProduct:
     updated_product = await add_portion_of_exist_product(product_id, product, db)
     if not updated_product:
         raise HTTPException(status_code=400, detail="Failed to update product")
@@ -32,7 +35,8 @@ async def add_product(product_id: int, product: AddingProduct, db: AsyncSession 
 
 
 @router.put("/reduce/{product_id}", response_model=GettingProduct)
-async def reduce_product(product_id: int, product: ReducingProduct, db: AsyncSession = Depends(get_db)) -> GettingProduct:
+async def reduce_product(product_id: int, product: ReducingProduct, db: AsyncSession = Depends(get_db),
+                         user: User = Depends(permission_dependency("change_product"))) -> GettingProduct:
     updated_product = await remove_portion_of_exist_product(product_id, product.value, db)
     if not updated_product:
         raise HTTPException(status_code=400, detail="Failed to update product")

@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from src.dependencies import get_db
+from src.dependencies import get_db, permission_dependency
 from src.order.schema import GettingOrder, CreatingOrder
 from src.order.service import create_order, get_order_by_id, get_user_orders
 

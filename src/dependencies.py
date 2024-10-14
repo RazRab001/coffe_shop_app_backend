@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,21 +15,24 @@ async def get_db() -> AsyncSession:
         yield session
 
 
-def permission_dependency(permission_name: str):
+def permission_dependency(permission_name: str = None, goal_user_id: UUID = None):
     async def _check_permission(
             user: User = Depends(current_active_user),
             db: AsyncSession = Depends(get_db)
     ) -> User:
-        return await check_permission(permission_name, user, db)
+        return await check_permission(permission_name, goal_user_id, user, db)
 
     return _check_permission
 
 
-async def check_permission(permission_name: str,
+async def check_permission(permission_name: str = None, goal_id: UUID = None,
                            user: User = Depends(current_active_user),
                            db: AsyncSession = Depends(get_db)) -> User:
     if not user:
         raise HTTPException(status_code=401, detail="User not authenticated")
+
+    if permission_name is None:
+        return user
 
     # Retrieve the user by their ID
     user_stmt = select(User).filter(User.id == user.id)
@@ -49,7 +54,7 @@ async def check_permission(permission_name: str,
     role_permissions = role_data.permissions or []
 
     # Check if the required permission exists in the role's permissions
-    if permission_name not in role_permissions:
+    if permission_name not in role_permissions or goal_id == user.id:
         raise HTTPException(status_code=403, detail="Access forbidden: insufficient permissions")
 
     return user_data

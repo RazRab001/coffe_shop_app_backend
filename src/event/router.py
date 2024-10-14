@@ -3,7 +3,6 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 from starlette import status
 
 from src.auth.models import User
@@ -36,7 +35,7 @@ async def get_active_akce(db: AsyncSession = Depends(get_db)) -> List[GettingEve
 
 @router.get("/all", response_model=List[GettingEvent])
 async def get_all_akce(db: AsyncSession = Depends(get_db),
-                       user: User = Depends(permission_dependency("create_event"))) -> List[GettingEvent]:
+                       user: User = Depends(permission_dependency("get_events"))) -> List[GettingEvent]:
     try:
         return await get_all_events(db)
     except SQLAlchemyError as e:
@@ -45,5 +44,5 @@ async def get_all_akce(db: AsyncSession = Depends(get_db),
 
 @router.delete("/{event_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_akce(event_id: int, db: AsyncSession = Depends(get_db),
-                      user: User = Depends(permission_dependency("create_event"))) -> None:
+                      user: User = Depends(permission_dependency("delete_event"))) -> None:
     await delete_event(event_id, db)

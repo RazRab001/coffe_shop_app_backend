@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from starlette import status
 
-from src.dependencies import get_db
+from src.auth.models import User
+from src.dependencies import get_db, permission_dependency
 from src.shop.schema import GettingShop, CreatingShop
 from src.shop.service import create_shop, delete_shop
 
@@ -14,7 +15,8 @@ router = APIRouter(
 
 
 @router.post("/", response_model=GettingShop, status_code=status.HTTP_201_CREATED)
-async def create_new_shop(shop: CreatingShop, db: AsyncSession = Depends(get_db)) -> GettingShop:
+async def create_new_shop(shop: CreatingShop, db: AsyncSession = Depends(get_db),
+                          user: User = Depends(permission_dependency("shop_action"))) -> GettingShop:
     try:
         created_shop = await create_shop(shop, db)
         if not created_shop:
@@ -25,5 +27,6 @@ async def create_new_shop(shop: CreatingShop, db: AsyncSession = Depends(get_db)
 
 
 @router.delete("/{shop_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_one_shop(shop_id: int, db: AsyncSession = Depends(get_db)) -> None:
+async def delete_one_shop(shop_id: int, db: AsyncSession = Depends(get_db),
+                          user: User = Depends(permission_dependency("shop_action"))) -> None:
     await delete_shop(shop_id, db)

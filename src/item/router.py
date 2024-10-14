@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from starlette import status
 
-from src.dependencies import get_db
+from src.auth.models import User
+from src.dependencies import get_db, permission_dependency
 from src.item.schema import ItemFields, GettingItem
 from src.item.service import create_item, get_all_active_items, update_item, delete_item, get_item_by_id
 
@@ -16,7 +17,8 @@ router = APIRouter(
 
 
 @router.post("", response_model=GettingItem, status_code=status.HTTP_201_CREATED)
-async def create_new_item(item: ItemFields, db: AsyncSession = Depends(get_db)) -> GettingItem:
+async def create_new_item(item: ItemFields, db: AsyncSession = Depends(get_db),
+                          user: User = Depends(permission_dependency("item_action"))) -> GettingItem:
     created_item = await create_item(item, db)
     if not created_item:
         raise HTTPException(status_code=400, detail="Failed to create item")
@@ -40,7 +42,8 @@ async def get_by_id(item_id: int, db: AsyncSession = Depends(get_db)) -> Getting
 
 
 @router.put("/{item_id}", response_model=GettingItem)
-async def update_one_item(item_id: int, item: ItemFields, db: AsyncSession = Depends(get_db)) -> GettingItem:
+async def update_one_item(item_id: int, item: ItemFields, db: AsyncSession = Depends(get_db),
+                          user: User = Depends(permission_dependency("item_action"))) -> GettingItem:
     updated_item = await update_item(item_id, item, db)
     if not updated_item:
         raise HTTPException(status_code=400, detail="Failed to update item")
@@ -48,5 +51,6 @@ async def update_one_item(item_id: int, item: ItemFields, db: AsyncSession = Dep
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_one_item(item_id: int, db: AsyncSession = Depends(get_db)) -> None:
+async def delete_one_item(item_id: int, db: AsyncSession = Depends(get_db),
+                          user: User = Depends(permission_dependency("item_action"))) -> None:
     await delete_item(item_id, db)

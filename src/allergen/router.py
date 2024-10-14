@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 from starlette import status
 
-from src.dependencies import get_db
+from src.auth.models import User
+from src.dependencies import get_db, permission_dependency
 from src.allergen.schema import CreatingAllergen, GettingAllergen
 from src.allergen.service import create_allergen, delete_allergen, get_all, get_by_id
 
@@ -16,7 +17,8 @@ router = APIRouter(
 
 
 @router.post("", response_model=GettingAllergen)
-async def create_new_allergen(allergen: CreatingAllergen, db: AsyncSession = Depends(get_db)) -> GettingAllergen:
+async def create_new_allergen(allergen: CreatingAllergen, db: AsyncSession = Depends(get_db),
+                              user: User = Depends(permission_dependency("allergen_action"))) -> GettingAllergen:
     created_allergen = await create_allergen(allergen, db)
     if not created_allergen:
         raise HTTPException(status_code=400, detail="Failed to create item")
@@ -40,5 +42,6 @@ async def get_one_allergen(allergen_id: int, db: AsyncSession = Depends(get_db))
 
 
 @router.delete("/{allergen_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_one_allergen(allergen_id: int, db: AsyncSession = Depends(get_db)) -> None:
+async def delete_one_allergen(allergen_id: int, db: AsyncSession = Depends(get_db),
+                              user: User = Depends(permission_dependency("allergen_action"))) -> None:
     await delete_allergen(allergen_id, db)
