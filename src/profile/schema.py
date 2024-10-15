@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -38,9 +38,9 @@ class UpdatingProfile(BaseModel):
 class GettingProfile(BaseModel):
     id: UUID
     username: str
-    phone: PhoneNumber
+    phone: Optional[PhoneNumber] = None
     preferences: List[GettingProfilePreference]
     allergens: List[GettingAllergen]
-    text_preference: str
-    evaluation: float
+    text_preference: Optional[str] = None
+    evaluation: Optional[float] = None
 

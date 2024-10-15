@@ -108,13 +108,14 @@ async def get_profile_by_id(user_id: UUID, db: AsyncSession) -> GettingProfile:
         stmt = select(User).where(User.id == user_id)
         result = await db.execute(stmt)
         user = result.scalar_one()
-
+        print(user.email)
         # Query preferences
         stmt = select(preference, profile_preference.c.value).where(
             profile_preference.c.user_id == user_id,
             profile_preference.c.preference_id == preference.c.id
         )
         pref_results = await db.execute(stmt)
+        print(pref_results)
         preferences = []
 
         for row in pref_results:
@@ -133,11 +134,11 @@ async def get_profile_by_id(user_id: UUID, db: AsyncSession) -> GettingProfile:
                     value=row.value
                 )
             )
-
+        print("After pref_result rows")
         # Query allergens
-        stmt = select(user_allergen, GettingAllergen).where(user_allergen.c.user_id == user_id)
+        stmt = select(user_allergen).where(user_allergen.c.user_id == user_id)
         allergen_results = await db.execute(stmt)
-
+        print(allergen_results)
         allergens = []
 
         for row in allergen_results:
@@ -160,15 +161,15 @@ async def get_profile_by_id(user_id: UUID, db: AsyncSession) -> GettingProfile:
             profile_data.c.user_id == user_id)
         result = await db.execute(stmt)
         profile_data_result = result.first()
-
+        print(profile_data_result)
         return GettingProfile(
             id=user.id,
             username=user.username,
             phone=user.phone,
             preferences=preferences,
             allergens=allergens,
-            text_preference=profile_data_result.text_preference,
-            evaluation=profile_data_result.evaluation
+            text_preference=profile_data_result.text_preference if profile_data_result is not None else None,
+            evaluation=profile_data_result.evaluation if profile_data_result is not None else None
         )
     except SQLAlchemyError as e:
         raise e

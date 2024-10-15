@@ -9,11 +9,12 @@ from pydantic_extra_types.phone_numbers import PhoneNumber
 
 class CreatingCard(BaseModel):
     phone_number: PhoneNumber
+    user_id: Optional[UUID] = None
 
 
 class UpdatingCard(BaseModel):
     phone_number: Optional[PhoneNumber] = None
-    user_id: Optional[str] = None
+    user_id: Optional[UUID] = None
     adding_bonus: Optional[int] = 0
 
 

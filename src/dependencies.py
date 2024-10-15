@@ -43,9 +43,9 @@ async def check_permission(permission_name: str = None, goal_id: UUID = None,
         raise HTTPException(status_code=404, detail="User not found")
 
     # Retrieve the role using role_id from user_data
-    role_stmt = select(role).filter(role.c.id == user_data.role_id)
+    role_stmt = select(role.c.id, role.c.permissions).filter(role.c.id == user_data.role_id)
     role_result = await db.execute(role_stmt)
-    role_data = role_result.scalar_one_or_none()
+    role_data = role_result.fetchone()
 
     if not role_data:
         raise HTTPException(status_code=404, detail="Role not found")

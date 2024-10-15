@@ -21,7 +21,8 @@ async def create_card(card_data: CreatingCard, db: AsyncSession) -> Optional[Get
         # Вставка новой карты
         stmt = insert(bonus_card).values(
             phone=card_data.phone_number,
-            count=0  # Начальное значение бонусов
+            user_id=card_data.user_id,
+            count=0
         ).returning(bonus_card.c.id, bonus_card.c.phone, bonus_card.c.user_id, bonus_card.c.count, bonus_card.c.used_points)
 
         result = await db.execute(stmt)

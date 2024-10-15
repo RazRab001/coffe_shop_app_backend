@@ -14,9 +14,9 @@ router = APIRouter(
 
 
 @router.put("/{user_id}", response_model=GettingProfile)
-async def update_user_profile(user_id: UUID, profile: UpdatingProfile, db: AsyncSession = Depends(get_db)):
-    #No filtration, need to update
-    user: User = Depends(permission_dependency("change_profile", user_id))
+async def update_user_profile(user_id: UUID, profile: UpdatingProfile, db: AsyncSession = Depends(get_db),
+                              user: User = Depends(permission_dependency())):
+    check_user: User = await permission_dependency("update_profile", goal_user_id=user_id)(user, db)
     try:
         updated_profile = await update_profile(user_id, profile, db)
         return updated_profile
@@ -37,6 +37,7 @@ async def add_preference(preference: CreatingPreference, db: AsyncSession = Depe
 @router.get("/{user_id}", response_model=GettingProfile)
 async def get_user_profile(user_id: UUID, db: AsyncSession = Depends(get_db)):
     try:
+        print(f"Looking for user with ID: {user_id}")
         profile = await get_profile_by_id(user_id, db)
         return profile
     except Exception as e:
