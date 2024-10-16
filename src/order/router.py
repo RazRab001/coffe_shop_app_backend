@@ -6,6 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
+from src.auth.models import User
 from src.dependencies import get_db, permission_dependency
 from src.order.schema import GettingOrder, CreatingOrder
 from src.order.service import create_order, get_order_by_id, get_user_orders
@@ -19,11 +20,26 @@ router = APIRouter(
 
 
 @router.post("", response_model=GettingOrder, status_code=status.HTTP_201_CREATED)
-async def create_new_order(order: CreatingOrder, db: AsyncSession = Depends(get_db)) -> GettingOrder:
+async def create_new_order(order: CreatingOrder, db: AsyncSession = Depends(get_db),
+                           user: User = Depends(permission_dependency())) -> GettingOrder:
+    if order.user_id is None:
+        order.user_id = user.id
     created_order = await create_order(order, db)
     if not created_order:
         raise HTTPException(status_code=400, detail="Failed to create order")
     return created_order
+
+
+@router.get("", response_model=List[GettingOrder])
+async def get_user_all_orders(db: AsyncSession = Depends(get_db),
+                              user: User = Depends(permission_dependency())) -> List[GettingOrder]:
+    try:
+        orders = await get_user_orders(user.id, db)
+        if not orders:
+            raise HTTPException(status_code=404, detail="No orders found for this user")
+        return orders
+    except SQLAlchemyError as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
 
 @router.get("/{user_id}", response_model=List[GettingOrder])
@@ -49,7 +65,7 @@ async def get_order(order_id: int, db: AsyncSession = Depends(get_db)) -> Gettin
 
 
 @router.put("", response_model=GettingOrder)
-async def use_actions_for_order(data: UseAkcesForm, db: AsyncSession = Depends(get_db)) -> GettingOrder:
+async def use_akces_for_order(data: UseAkcesForm, db: AsyncSession = Depends(get_db)) -> GettingOrder:
     akce_order = await use_akce(data, db)
     if not akce_order:
         raise HTTPException(status_code=400, detail="Failed to using akce with order")

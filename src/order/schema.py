@@ -28,7 +28,7 @@ class CreatingOrder(BaseModel):
 
 class GettingOrder(BaseModel):
     id: int
-    user_id: Optional[int]
+    user_id: Optional[UUID] = None
     date: date
     cost: float
     items: List[GettingItem]

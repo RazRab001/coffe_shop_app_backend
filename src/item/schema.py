@@ -24,7 +24,7 @@ class ItemFields(BaseModel):
 
 class GettingIngredients(BaseModel):
     name: str
-    value_type: str
+    value_type: str | int
     product_id: Optional[int] = None
     value: float
     cost: Optional[float] = None

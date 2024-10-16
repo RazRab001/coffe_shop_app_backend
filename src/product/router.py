@@ -8,7 +8,7 @@ from starlette import status
 
 from src.auth.models import User
 from src.dependencies import get_db, permission_dependency
-from src.product.service import create_new_product, add_portion_of_exist_product, remove_portion_of_exist_product, get_product_by_id
+from src.product.service import create_new_product, add_portion_of_exist_product, remove_portion_of_exist_product, get_product_by_id, get_all_products
 from src.product.schema import GettingProduct, CreationProduct, AddingProduct, ReducingProduct
 
 router = APIRouter(
@@ -49,3 +49,8 @@ async def get_product(product_id: int, db: AsyncSession = Depends(get_db)) -> Ge
     if not product:
         raise HTTPException(status_code=400, detail="Failed to get product")
     return product
+
+
+@router.get("", response_model=List[GettingProduct])
+async def get_products(db: AsyncSession = Depends(get_db)) -> list[GettingProduct]:
+    return await get_all_products(db)

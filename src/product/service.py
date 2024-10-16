@@ -194,3 +194,53 @@ async def remove_portion_of_exist_product(product_id: int, value: float, db: Asy
         await db.rollback()
         print(f"Error occurred while removing portion of product: {e}")
         raise e
+
+
+async def get_all_products(db: AsyncSession) -> List[GettingProduct]:
+    from src.allergen.model import allergen
+    try:
+        # Запрос на получение всех продуктов
+        query = await db.execute(
+            select(
+                product.c.id,
+                product.c.name,
+                product.c.value,
+                product_value_type.c.name.label('value_type'),
+                product.c.cost_per_one
+            ).join(
+                product_value_type, product.c.value_type_id == product_value_type.c.id
+            )
+        )
+
+        products = query.fetchall()
+
+        all_products = []
+
+        # Перебираем каждый продукт и получаем для него аллергены
+        for product_data in products:
+            # Запрос на получение аллергенов для каждого продукта
+            allergen_query = await db.execute(
+                select(allergen.c.id, allergen.c.name)
+                .join(allergen_product, allergen.c.id == allergen_product.c.allergen_id)
+                .filter(allergen_product.c.product_id == product_data.id)
+            )
+
+            allergens = allergen_query.fetchall()
+            allergen_names = [allergen.name for allergen in allergens]
+
+            # Добавляем продукт в список
+            all_products.append(GettingProduct(
+                id=product_data.id,
+                name=product_data.name,
+                value=product_data.value,
+                value_type=product_data.value_type,
+                unit_cost=product_data.cost_per_one,
+                allergens=allergen_names
+            ))
+
+        return all_products
+
+    except SQLAlchemyError as e:
+        await db.rollback()
+        print(f"Error occurred while fetching all products: {e}")
+        raise e
