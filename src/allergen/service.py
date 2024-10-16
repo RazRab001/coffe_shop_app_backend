@@ -80,7 +80,7 @@ async def get_allergens_by_ids(allergen_ids: List[int], db: AsyncSession) -> Lis
     try:
         result = await db.execute(query)
         found_allergens = result.fetchall()  # Fetch all rows that match the query
-
+        print(found_allergens)
         # Convert the result to a list of GettingAllergen objects
         return [GettingAllergen(id=row.id, name=row.name) for row in found_allergens]
 

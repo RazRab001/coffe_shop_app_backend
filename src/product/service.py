@@ -5,6 +5,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, insert
 
+from src.allergen.schema import GettingAllergen
 from src.product.model import product, product_value_type, shop_product, allergen_product
 from src.product.schema import CreationProduct, GettingProduct, AddingProduct
 from src.allergen.model import allergen
@@ -13,30 +14,28 @@ from src.allergen.service import get_allergens_by_ids
 
 async def create_new_product(data: CreationProduct, db: AsyncSession) -> Optional[GettingProduct]:
     try:
-        # Begin the transaction
-        async with db.begin():
-            # Get or create the value type
-            value_type_id = await get_or_create_value_type(data.value_type, db)
+        # Get or create the value type
+        value_type_id = await get_or_create_value_type(data.value_type, db)
 
-            # Insert the new product
-            new_product_stmt = insert(product).values(
-                name=data.title,
-                value_type_id=value_type_id,
-            )
+        # Insert the new product
+        new_product_stmt = insert(product).values(
+            name=data.title,
+            value_type_id=value_type_id,
+        )
+        result = await db.execute(new_product_stmt)
+        product_id = result.inserted_primary_key[0]
 
-            result = await db.execute(new_product_stmt)
-            product_id = result.inserted_primary_key[0]
+        # Insert allergens for the product if provided
+        if data.allergens:
+            allergen_product_stmt = insert(allergen_product).values([
+                {"allergen_id": allergen_id, "product_id": product_id} for allergen_id in data.allergens
+            ])
+            await db.execute(allergen_product_stmt)
 
-            # Insert allergens for the product if provided
-            if data.allergens:
-                allergen_product_stmt = insert(allergen_product).values([
-                    {"allergen_id": allergen_id, "product_id": product_id} for allergen_id in data.allergens
-                ])
-                await db.execute(allergen_product_stmt)
-
-            # Commit the transaction if all goes well
-            await db.commit()
-
+        # Commit the transaction
+        await db.commit()
+        allergen_names = await get_allergen_names_by_ids(data.allergens, db) if data.allergens else []
+        print(allergen_names)
         # Return the newly created product
         return GettingProduct(
             id=product_id,
@@ -44,7 +43,7 @@ async def create_new_product(data: CreationProduct, db: AsyncSession) -> Optiona
             value=0,
             value_type=data.value_type,
             unit_cost=0,
-            allergens=await get_allergen_names_by_ids(data.allergens, db) if data.allergens else []
+            allergens=allergen_names
         )
 
     except SQLAlchemyError as e:
@@ -119,8 +118,8 @@ async def get_product_by_id(id: int, db: AsyncSession) -> Optional[GettingProduc
 
 
 async def get_allergen_names_by_ids(allergen_ids: List[int], db: AsyncSession) -> List[str]:
-    allergens = await get_allergens_by_ids(allergen_ids, db)
-    return [allergen.name for al_gen in allergens]
+    allergens: List[GettingAllergen] = await get_allergens_by_ids(allergen_ids, db)
+    return [al_gen.name for al_gen in allergens]
 
 
 async def add_portion_of_exist_product(product_id: int, data: AddingProduct, db: AsyncSession) -> Optional[GettingProduct]:
