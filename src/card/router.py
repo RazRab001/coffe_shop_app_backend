@@ -62,6 +62,16 @@ async def update_card_data(card_id: int, card: UpdatingCard, db: AsyncSession = 
     return card
 
 
+@router.put("", response_model=GettingCard)
+async def update_card_data_by_user(card: UpdatingCard, db: AsyncSession = Depends(get_db),
+                           user: User = Depends(permission_dependency())) -> GettingCard:
+    existed_card = await get_card_by_user(user.id, db)
+    card = await update_card(existed_card.id, card, db)
+    if not card:
+        raise HTTPException(status_code=400, detail="Failed to update card")
+    return card
+
+
 @router.delete("/{card_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_existing_card(card_id: int, db: AsyncSession = Depends(get_db),
                                user: User = Depends(permission_dependency())) -> None:
