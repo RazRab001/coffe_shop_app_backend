@@ -1,9 +1,11 @@
 from typing import Optional
+from uuid import UUID
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import insert, delete, update, select
 
+from src.auth.models import User
 from src.card.model import bonus_card
 from src.card.schema import CreatingCard, UpdatingCard, GettingCard
 
@@ -170,6 +172,45 @@ async def get_card_by_id(card_id: int, db: AsyncSession) -> Optional[GettingCard
 
     except SQLAlchemyError as e:
         print(f"Error retrieving bonus card by ID: {e}")
+        raise e
+
+
+async def get_card_by_user(user_id: UUID, db: AsyncSession) -> Optional[GettingCard]:
+    """
+    Сначала пытается найти бонусную карту по user_id.
+    Если карта не найдена, ищет пользователя по user_id, затем ищет карту по его номеру телефона.
+    """
+    try:
+        # 1. Попытка найти карту по user_id
+        card_stmt = select(bonus_card).where(bonus_card.c.user_id == user_id)
+        result = await db.execute(card_stmt)
+        card_row = result.fetchone()
+
+        if card_row:
+            # Если карта найдена, возвращаем её
+            return GettingCard(
+                id=card_row.id,
+                phone=card_row.phone,
+                user_id=card_row.user_id,
+                count=card_row.count,
+                used_points=card_row.used_points
+            )
+
+        # 2. Если карта не найдена, ищем пользователя по user_id
+        user_stmt = select(User).where(User.id == user_id)
+        result = await db.execute(user_stmt)
+        user_row = result.fetchone()
+
+        if not user_row:
+            return None  # Если пользователь не найден, возвращаем None
+
+        # 3. Ищем карту по номеру телефона пользователя
+        card_by_phone = await get_card_by_phone(user_row.phone, db)
+        return card_by_phone  # Если карта найдена по телефону, она будет возвращена
+
+    except SQLAlchemyError as e:
+        await db.rollback()
+        print(f"Error occurred while fetching card by user: {e}")
         raise e
 
 

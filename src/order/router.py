@@ -31,7 +31,7 @@ async def create_new_order(order: CreatingOrder, db: AsyncSession = Depends(get_
 
 
 @router.get("", response_model=List[GettingOrder])
-async def get_user_all_orders(db: AsyncSession = Depends(get_db),
+async def get_my_all_orders(db: AsyncSession = Depends(get_db),
                               user: User = Depends(permission_dependency())) -> List[GettingOrder]:
     try:
         orders = await get_user_orders(user.id, db)

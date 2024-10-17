@@ -9,7 +9,7 @@ from starlette import status
 from src.auth.models import User
 from src.dependencies import get_db, permission_dependency
 from src.card.schema import CreatingCard, UpdatingCard, GettingCard
-from src.card.service import create_card, update_card, get_card_by_id, get_card_by_phone, delete_card
+from src.card.service import create_card, update_card, get_card_by_id, get_card_by_phone, delete_card, get_card_by_user
 
 router = APIRouter(
     prefix="/card",
@@ -38,6 +38,14 @@ async def get_card_with_id(card_id: int, db: AsyncSession = Depends(get_db)) -> 
 @router.get("/phone/{phone}", response_model=GettingCard)
 async def get_card_with_phone_number(phone: str, db: AsyncSession = Depends(get_db)) -> GettingCard:
     card = await get_card_by_phone(phone, db)
+    if not card:
+        raise HTTPException(status_code=400, detail="Failed to find card")
+    return card
+
+
+@router.get("", response_model=GettingCard)
+async def get_card_by_owner_id(db: AsyncSession = Depends(get_db), user: User = Depends(permission_dependency())) -> GettingCard:
+    card = await get_card_by_user(user.id, db)
     if not card:
         raise HTTPException(status_code=400, detail="Failed to find card")
     return card

@@ -34,22 +34,22 @@ app.middleware("http")(not_found_error_middleware)
 
 app.include_router(
     fastapi_users.get_auth_router(auth_backend),
-    prefix="/auth/jwt",
+    prefix="/api/v1/auth/jwt",
     tags=["Auth"]
 )
 app.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
-    prefix="/auth",
+    prefix="/api/v1/auth",
     tags=["Auth"],
 )
 app.include_router(
     fastapi_users.get_reset_password_router(),
-    prefix="/auth",
+    prefix="/api/v1/auth",
     tags=["Auth"],
 )
 app.include_router(
     fastapi_users.get_verify_router(UserRead),
-    prefix="/auth",
+    prefix="/api/v1/auth",
     tags=["Auth"],
 )
 

@@ -24,6 +24,16 @@ async def update_user_profile(user_id: UUID, profile: UpdatingProfile, db: Async
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.put("", response_model=GettingProfile)
+async def update_my_profile(profile: UpdatingProfile, db: AsyncSession = Depends(get_db),
+                              user: User = Depends(permission_dependency())):
+    try:
+        updated_profile = await update_profile(user.id, profile, db)
+        return updated_profile
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @router.post("/preference", response_model=GettingPreference)
 async def add_preference(preference: CreatingPreference, db: AsyncSession = Depends(get_db),
                          user: User = Depends(permission_dependency("add_preference"))):
@@ -39,6 +49,15 @@ async def get_user_profile(user_id: UUID, db: AsyncSession = Depends(get_db)):
     try:
         print(f"Looking for user with ID: {user_id}")
         profile = await get_profile_by_id(user_id, db)
+        return profile
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("", response_model=GettingProfile)
+async def get_my_profile(db: AsyncSession = Depends(get_db), user: User = Depends(permission_dependency())):
+    try:
+        profile = await get_profile_by_id(user.id, db)
         return profile
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
